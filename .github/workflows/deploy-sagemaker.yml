@@ -58,8 +58,7 @@ jobs:
       run: |
         aws sagemaker create-endpoint-config \
           --endpoint-config-name ${{ env.ENDPOINT_CONFIG_NAME }} \
-          --production-variants "[{"InstanceType": "ml.t2.medium","InitialInstanceCount": 1,"ModelName": "${{ env.MODEL_NAME }}","VariantName": "AllTraffic"}]"
-
+          --production-variants '[{"VariantName":"AllTraffic","ModelName":"${{ env.MODEL_NAME }}","InstanceType":"ml.t2.medium","InitialInstanceCount":1}]'
 
     - name: Deploy Sagemaker Endpoint
       run: |
