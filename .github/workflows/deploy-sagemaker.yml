@@ -46,7 +46,11 @@ jobs:
         docker buildx build --platform linux/amd64 --provenance=false \
             --output "type=image, oci-mediatypes=false, push=true, name=$REGISTRY/$REPOSITORY:$IMAGE_TAG" .
         echo "image_uri=$REGISTRY/$REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV
-        
+
+    - name: Delete Existing SageMaker Model
+      run: |
+        aws sagemaker delete-model --model-name ${{ env.MODEL_NAME }} || true
+
     - name: Create Sagemaker Model
       run: mlflow sagemaker push-model --model-name ${{ env.MODEL_NAME }} --model-uri ${{ env.MODEL_URI }} --execution-role-arn ${{ env.ROLE_ARN }} --bucket package-model-for-sagemaker-deploy --image-url ${{ env.image_uri }} --region-name eu-central-1
         
