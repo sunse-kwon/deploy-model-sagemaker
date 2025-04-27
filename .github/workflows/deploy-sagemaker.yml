@@ -1,0 +1,74 @@
+name: deploy to sagemaker
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      MODEL_NAME: 'DeliveryDelayModelSeoul'
+      MODEL_URI: s3://artifact-store-sun/mlruns/3/d639258af272416184e0e574e3189d7b/artifacts/random_forest_model
+      ROLE_ARN: arn:aws:iam::785685275217:role/service-role/SageMaker-mlops
+      ENDPOINT_CONFIG_NAME: DeliveryDelay-endpoint-config
+      ENDPOINT_NAME: DeliveryDelay-endpoint
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install requirements
+      run: pip install --no-cache-dir -r requirements.txt
+      
+    - name: "Configure AWS Credentials"
+      uses: aws-actions/configure-aws-credentials@v4.1.0
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-central-1
+        
+    - name: Amazon ECR "Login" Action for GitHub Actions
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2.0.1
+
+    - name: Docker Setup Buildx
+      uses: docker/setup-buildx-action@v3.10.0
+
+    - name: Build, tag, and push docker image to Amazon ECR
+      env:
+        REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        REPOSITORY: mlflow
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker buildx build --platform linux/amd64 --provenance=false \
+            --output "type=image, oci-mediatypes=false, push=true, name=$REGISTRY/$REPOSITORY:$IMAGE_TAG" .
+        echo "image_uri=$REGISTRY/$REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV
+        
+    - name: Create Sagemaker Model
+      run: mlflow sagemaker push-model \
+        -n ${{ env.MODEL_NAME }} \
+        -m ${{ env.MODEL_URI }} \
+        -e ${{ env.ROLE_ARN }} \
+        -b package-model-for-sagemaker-deploy \
+        -i ${{ env.image_uri }} \
+        --region-name eu-central-1
+        
+    - name: Create Sagemaker Endpoint Configuration
+      run: |
+        aws sagemaker create-endpoint-config \
+          --endpoint-config-name ${{ env.ENDPOINT_CONFIG_NAME }} \
+          --production-variants [{'InstanceType': 'ml.t2.medium','InitialInstanceCount': 1,'ModelName': ${{ env.MODEL_NAME }},'VariantName': 'AllTraffic',}]
+
+    - name: Deploy Sagemaker Endpoint
+      run: |
+        aws sagemaker create-endpoint \
+          --endpoint-name ${{ env.ENDPOINT_NAME }}
+          --endpoint-config-name ${{ env.ENDPOINT_CONFIG_NAME }}
+
+    - name: Wait for Endpoint
+      run: |
+        aws sagemaker wait endpoint-in-service \ 
+          --endpoint-name ${{ env.ENDPOINT_NAME }}
