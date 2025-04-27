@@ -48,13 +48,7 @@ jobs:
         echo "image_uri=$REGISTRY/$REPOSITORY:$IMAGE_TAG" >> $GITHUB_ENV
         
     - name: Create Sagemaker Model
-      run: mlflow sagemaker push-model \
-        --model-name ${{ env.MODEL_NAME }} \
-        --model-uri ${{ env.MODEL_URI }} \
-        --execution-role-arn ${{ env.ROLE_ARN }} \
-        --bucket package-model-for-sagemaker-deploy \
-        --image-url ${{ env.image_uri }} \
-        --region-name eu-central-1
+      run: mlflow sagemaker push-model --model-name ${{ env.MODEL_NAME }} --model-uri ${{ env.MODEL_URI }} --execution-role-arn ${{ env.ROLE_ARN }} --bucket package-model-for-sagemaker-deploy --image-url ${{ env.image_uri }} --region-name eu-central-1
         
     - name: Create Sagemaker Endpoint Configuration
       run: |
