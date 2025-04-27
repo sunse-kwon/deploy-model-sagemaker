@@ -53,13 +53,22 @@ jobs:
 
     - name: Create Sagemaker Model
       run: mlflow sagemaker push-model --model-name ${{ env.MODEL_NAME }} --model-uri ${{ env.MODEL_URI }} --execution-role-arn ${{ env.ROLE_ARN }} --bucket package-model-for-sagemaker-deploy --image-url ${{ env.image_uri }} --region-name eu-central-1
-        
+    
+    - name: Delete Existing Endpoint Configuration
+      run: |
+        aws sagemaker delete-endpoint-config --endpoint-config-name ${{ env.ENDPOINT_CONFIG_NAME }} || true
+
     - name: Create Sagemaker Endpoint Configuration
       run: |
         aws sagemaker create-endpoint-config \
           --endpoint-config-name ${{ env.ENDPOINT_CONFIG_NAME }} \
           --production-variants '[{"VariantName":"AllTraffic","ModelName":"${{ env.MODEL_NAME }}","InstanceType":"ml.t2.medium","InitialInstanceCount":1}]'
 
+    - name: Delete Existing SageMaker Endpoint
+      run: |
+        aws sagemaker delete-endpoint --endpoint-name ${{ env.ENDPOINT_NAME }} || true
+        aws sagemaker wait endpoint-deleted --endpoint-name ${{ env.ENDPOINT_NAME }} || true
+        
     - name: Deploy Sagemaker Endpoint
       run: |
         aws sagemaker create-endpoint \
