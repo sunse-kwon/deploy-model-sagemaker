@@ -63,7 +63,7 @@ jobs:
     - name: Deploy Sagemaker Endpoint
       run: |
         aws sagemaker create-endpoint \
-          --endpoint-name ${{ env.ENDPOINT_NAME }}
+          --endpoint-name ${{ env.ENDPOINT_NAME }} \
           --endpoint-config-name ${{ env.ENDPOINT_CONFIG_NAME }}
 
     - name: Wait for Endpoint
