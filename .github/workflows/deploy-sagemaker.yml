@@ -49,11 +49,11 @@ jobs:
         
     - name: Create Sagemaker Model
       run: mlflow sagemaker push-model \
-        -n ${{ env.MODEL_NAME }} \
-        -m ${{ env.MODEL_URI }} \
-        -e ${{ env.ROLE_ARN }} \
-        -b package-model-for-sagemaker-deploy \
-        -i ${{ env.image_uri }} \
+        --model-name ${{ env.MODEL_NAME }} \
+        --model-uri ${{ env.MODEL_URI }} \
+        --execution-role-arn ${{ env.ROLE_ARN }} \
+        --bucket package-model-for-sagemaker-deploy \
+        --image-url ${{ env.image_uri }} \
         --region-name eu-central-1
         
     - name: Create Sagemaker Endpoint Configuration
