@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      MODEL_NAME: 'DeliveryDelayModelSeoul'
+      MODEL_NAME: DeliveryDelayModelSeoul
       MODEL_URI: s3://artifact-store-sun/mlruns/3/d639258af272416184e0e574e3189d7b/artifacts/random_forest_model
       ROLE_ARN: arn:aws:iam::785685275217:role/service-role/SageMaker-mlops
       ENDPOINT_CONFIG_NAME: DeliveryDelay-endpoint-config
