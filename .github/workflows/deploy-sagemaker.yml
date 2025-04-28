@@ -1,17 +1,16 @@
 name: deploy to sagemaker
 
 on:
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+  repository_dispatch:
+    types: [ mlflow_prod_trigger ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
       MODEL_NAME: DeliveryDelayModelSeoul
-      MODEL_URI: s3://artifact-store-sun/mlruns/3/d639258af272416184e0e574e3189d7b/artifacts/random_forest_model
+      MODEL_URI: ${{ github.event.client_payload.model_uri }}
       ROLE_ARN: arn:aws:iam::785685275217:role/service-role/SageMaker-mlops
       ENDPOINT_CONFIG_NAME: DeliveryDelay-endpoint-config
       ENDPOINT_NAME: DeliveryDelay-endpoint
@@ -41,7 +40,7 @@ jobs:
       env:
         REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         REPOSITORY: mlflow
-        IMAGE_TAG: ${{ github.sha }}
+        IMAGE_TAG: ${{ github.event.client_payload.image_tag }}
       run: |
         docker buildx build --platform linux/amd64 --provenance=false \
             --output "type=image, oci-mediatypes=false, push=true, name=$REGISTRY/$REPOSITORY:$IMAGE_TAG" .
